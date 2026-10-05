@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Эволюция методов шифрования: от Цезаря до AES</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Подключение библиотеки CryptoJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: rgba(22, 27, 34, 0.85);
+            --card-border: rgba(56, 139, 253, 0.25);
+            --primary: #58a6ff;
+            --accent: #2ea043;
+            --neon-purple: #a371f7;
+            --text-main: #c9d1d9;
+            --text-heading: #f0f6fc;
+            --code-bg: #161b22;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Canvas Background */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Layout Structure */
+        header {
+            background: rgba(13, 17, 23, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .logo {
+            font-family: 'Fira Code', monospace;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        /* Navigation Tabs */
+        nav {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-main);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary);
+            border-color: rgba(88, 166, 255, 0.3);
+            background: rgba(88, 166, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background: rgba(88, 166, 255, 0.15);
+            color: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 12px rgba(88, 166, 255, 0.2);
+        }
+
+        /* Container & Cards */
+        container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            display: block;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease-in-out forwards;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        h1, h2, h3, h4 {
+            color: var(--text-heading);
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        h1 { font-size: 2.2rem; margin-bottom: 0.5rem; color: var(--primary); }
+        h2 { font-size: 1.6rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem; margin-top: 1rem; }
+        h3 { font-size: 1.25rem; color: var(--neon-purple); margin-top: 1rem; }
+
+        p { margin-bottom: 1rem; }
+
+        /* Formula & Code Boxes */
+        .formula-box, pre {
+            background-color: var(--code-bg);
+            border-left: 4px solid var(--primary);
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.95rem;
+            color: #79c0ff;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        /* Tables */
+        .table-responsive {
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(22, 27, 34, 0.5);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 0.85rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(240, 246, 252, 0.1);
+        }
+
+        th {
+            background-color: rgba(56, 139, 253, 0.15);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+
+        /* Lists */
+        ul, ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        li { margin-bottom: 0.4rem; }
+
+        /* Interactive Crypto Lab */
+        .lab-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .lab-grid { grid-template-columns: 1fr; }
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-heading);
+        }
+
+        input[type="text"], input[type="number"], select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--code-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            color: #fff;
+            font-family: 'Fira Code', monospace;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 8px rgba(88, 166, 255, 0.3);
+        }
+
+        .btn-action {
+            background: linear-gradient(135deg, var(--primary), var(--neon-purple));
+            color: #fff;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .btn-action:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #8b949e;
+            font-size: 0.85rem;
+            border-top: 1px solid var(--card-border);
+            margin-top: 3rem;
+            background: rgba(13, 17, 23, 0.9);
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <header>
+        <div class="logo">
+            🔒 CRYPTO<span>.EDU</span>
+        </div>
+        <nav>
+            <button class="tab-btn active" onclick="openTab('intro')">Введение</button>
+            <button class="tab-btn" onclick="openTab('caesar')">Цезарь</button>
+            <button class="tab-btn" onclick="openTab('vigenere')">Виженер</button>
+            <button class="tab-btn" onclick="openTab('enigma')">Энигма</button>
+            <button class="tab-btn" onclick="openTab('aes')">AES</button>
+            <button class="tab-btn" onclick="openTab('compare')">Сравнение & Аналоги</button>
+            <button class="tab-btn" onclick="openTab('lab')" style="border-color: var(--accent); color: var(--accent);">⚡ Лаборатория</button>
+        </nav>
+    </header>
+
+    <container>
+        <!-- TAB: INTRO -->
+        <div id="intro" class="tab-content active">
+            <div class="card">
+                <h1>Эволюция методов шифрования</h1>
+                <p style="font-size: 1.1rem; color: #8b949e;">Проект по информатике (10–11 класс)</p>
+                
+                <h2>1. Введение в криптографию</h2>
+                <h3>1.1 Что такое криптография?</h3>
+                <p><strong>Криптография</strong> (от греч. <em>kryptós</em> — скрытый, <em>gráphō</em> — пишу) — наука о методах защиты информации путём её преобразования, исключающего чтение посторонними лицами[cite: 1].</p>
+                <p>Криптография решает три фундаментальные задачи[cite: 1]:</p>
+                <ul>
+                    <li><strong>Конфиденциальность</strong> — информацию может прочитать только тот, кому она предназначена[cite: 1].</li>
+                    <li><strong>Целостность</strong> — информация не была изменена в процессе передачи[cite: 1].</li>
+                    <li><strong>Аутентификация</strong> — подтверждение личности отправителя[cite: 1].</li>
+                </ul>
+
+                <h3>1.2 Основные термины</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>Термин</th><th>Определение</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Открытый текст (plaintext)</td><td>Исходное сообщение до шифрования[cite: 1]</td></tr>
+                            <tr><td>Шифротекст (ciphertext)</td><td>Зашифрованное сообщение[cite: 1]</td></tr>
+                            <tr><td>Шифр</td><td>Алгоритм преобразования текста[cite: 1]</td></tr>
+                            <tr><td>Ключ</td><td>Секретный параметр, управляющий алгоритмом[cite: 1]</td></tr>
+                            <tr><td>Шифрование</td><td>Процесс преобразования открытого текста в шифротекст[cite: 1]</td></tr>
+                            <tr><td>Дешифрование</td><td>Обратный процесс — восстановление открытого текста[cite: 1]</td></tr>
+                            <tr><td>Криптоанализ</td><td>Наука о взломе шифров без знания ключа[cite: 1]</td></tr>
+                            <tr><td>Криптостойкость</td><td>Устойчивость шифра к попыткам взлома[cite: 1]</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>1.3 Классификация шифров</h3>
+                <div class="formula-box">
+Криптография
+├── Симметричная (один ключ)
+│   ├── Шифры замены (Цезарь, Виженер)
+│   ├── Шифры перестановки
+│   └── Блочные шифры (DES, AES)
+└── Асимметричная (два ключа)
+    └── RSA, ECC
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: CAESAR -->
+        <div id="caesar" class="tab-content">
+            <div class="card">
+                <h1>2. Шифр Цезаря</h1>
+                <h3>2.1 История</h3>
+                <p>Шифр Цезаря — один из древнейших известных шифров, названный в честь Гая Юлия Цезаря (100–44 до н. э.), который применял сдвиг на 3 позиции («А» → «Д», «Б» → «Е»)[cite: 1].</p>
+
+                <h3>2.2 Принцип работы</h3>
+                <p>Шифр Цезаря — это <strong>шифр замены со сдвигом</strong>[cite: 1]. Каждая буква алфавита заменяется буквой, стоящей на фиксированное число позиций вперёд[cite: 1].</p>
+                <div class="formula-box">
+Шифрование:   E(x) = (x + k) mod n
+Дешифрование: D(x) = (x - k + n) mod n
+
+Где:
+x — порядковый номер буквы (А=0, Б=1, В=2 ...)
+k — ключ (величина сдвига)
+n — размер алфавита (для русского: 33, для английского: 26)
+mod — остаток от деления
+                </div>
+
+                <h3>2.3 Пример шифрования (k = 3)</h3>
+                <p>Алфавит: <code>АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ</code>[cite: 1]</p>
+                <div class="table-responsive">
+                    <table>
+                        <tr><th>Текст</th><td>П</td><td>Р</td><td>И</td><td>В</td><td>Е</td><td>Т</td></tr>
+                        <tr><th>Порядковый №</th><td>15</td><td>16</td><td>8</td><td>2</td><td>4</td><td>18</td></tr>
+                        <tr><th>После сдвига (+3)</th><td>18</td><td>19</td><td>11</td><td>5</td><td>7</td><td>21</td></tr>
+                        <tr><th>Шифротекст</th><td><strong>С</strong></td><td><strong>Т</strong></td><td><strong>Л</strong></td><td><strong>Е</strong></td><td><strong>З</strong></td><td><strong>Х</strong></td></tr>
+                    </table>
+                </div>
+
+                <h3>2.4 Слабости шифра</h3>
+                <ul>
+                    <li>Критически малое пространство ключей (всего 32 для русского языка)[cite: 1].</li>
+                    <li>Уязвимость к <strong>частотному анализу</strong>[cite: 1].</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- TAB: VIGENERE -->
+        <div id="vigenere" class="tab-content">
+            <div class="card">
+                <h1>3. Шифр Виженера</h1>
+                <h3>3.1 История</h3>
+                <p>Описан Блезом де Виженером в 1586 году[cite: 1]. Три века считался неразгадываемым[cite: 1]. Взломан в 1863 году Фридрихом Касиски[cite: 1].</p>
+
+                <h3>3.2 Принцип работы</h3>
+                <p>Шифр Виженера — это <strong>полиалфавитный шифр замены</strong> с ключевым словом[cite: 1].</p>
+                <div class="formula-box">
+Шифрование:   E(i) = (P(i) + K(i mod m)) mod n
+Дешифрование: D(i) = (C(i) - K(i mod m) + n) mod n
+                </div>
+
+                <h3>3.3 Пример шифрования</h3>
+                <p><strong>Ключ:</strong> КЛЮЧ | <strong>Текст:</strong> ПРИВЕТ[cite: 1]</p>
+                <div class="table-responsive">
+                    <table>
+                        <tr><th>Текст</th><td>П (15)</td><td>Р (16)</td><td>И (8)</td><td>В (2)</td><td>Е (4)</td><td>Т (18)</td></tr>
+                        <tr><th>Ключ</th><td>К (11)</td><td>Л (12)</td><td>Ю (30)</td><td>Ч (26)</td><td>К (11)</td><td>Л (12)</td></tr>
+                        <tr><th>Сумма</th><td>26</td><td>28</td><td>38</td><td>28</td><td>15</td><td>30</td></tr>
+                        <tr><th>mod 33</th><td>26</td><td>28</td><td>5</td><td>28</td><td>15</td><td>30</td></tr>
+                        <tr><th>Шифр</th><td><strong>Щ</strong></td><td><strong>Э</strong></td><td><strong>Е</strong></td><td><strong>Э</strong></td><td><strong>М</strong></td><td><strong>Ю</strong></td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: ENIGMA -->
+        <div id="enigma" class="tab-content">
+            <div class="card">
+                <h1>4. Машина Энигма</h1>
+                <h3>4.1 История и устройство</h3>
+                <p>Электромеханическая шифровальная машина Артура Шербиуса (1918 г.)[cite: 1].</p>
+                <ul>
+                    <li><strong>Клавиатура:</strong> 26 клавиш[cite: 1].</li>
+                    <li><strong>Роторы:</strong> непрерывно меняют схему замены[cite: 1].</li>
+                    <li><strong>Рефлектор:</strong> отправляет сигнал обратно[cite: 1].</li>
+                    <li><strong>Коммутационная панель:</strong> перестановка пар букв[cite: 1].</li>
+                </ul>
+
+                <h3>4.3 Взлом Энигмы</h3>
+                <p>В 1940 году <strong>Алан Тьюринг</strong> создал устройство «Бомба» (Bombe) для автоматизированного взлома[cite: 1].</p>
+            </div>
+        </div>
+
+        <!-- TAB: AES -->
+        <div id="aes" class="tab-content">
+            <div class="card">
+                <h1>5. Современный стандарт AES</h1>
+                <h3>5.1 Предыстория: DES</h3>
+                <p>Принятый в 1977 году DES (56 бит) к 1999 году взламывался за 22 часа[cite: 1].</p>
+
+                <h3>5.2 Что такое AES?</h3>
+                <p><strong>AES (Advanced Encryption Standard)</strong> — симметричный блочный шифр (2001 год)[cite: 1].</p>
+
+                <div class="table-responsive">
+                    <table>
+                        <tr><th>Параметр</th><th>Значение</th></tr>
+                        <tr><td>Размер блока</td><td>128 бит (16 байт)[cite: 1]</td></tr>
+                        <tr><td>Длина ключа</td><td>128, 192 или 256 бит[cite: 1]</td></tr>
+                        <tr><td>Количество раундов</td><td>10, 12 или 14[cite: 1]</td></tr>
+                    </table>
+                </div>
+
+                <h3>5.3 Операции раунда AES</h3>
+                <ol>
+                    <li><strong>SubBytes:</strong> Замена байтов по таблице S-box[cite: 1].</li>
+                    <li><strong>ShiftRows:</strong> Циклический сдвиг строк матрицы State[cite: 1].</li>
+                    <li><strong>MixColumns:</strong> Смешивание столбцов матрицы[cite: 1].</li>
+                    <li><strong>AddRoundKey:</strong> XOR с раундовым ключом[cite: 1].</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- TAB: COMPARISON -->
+        <div id="compare" class="tab-content">
+            <div class="card">
+                <h1>6. Сравнение методов шифрования</h1>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Критерий</th>
+                                <th>Цезарь</th>
+                                <th>Виженер</th>
+                                <th>Энигма</th>
+                                <th>AES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Год создания</td><td>~50 до н.э.</td><td>1586</td><td>1918</td><td>2001</td></tr>
+                            <tr><td>Тип</td><td>Замена</td><td>Замена</td><td>Электромеханика</td><td>Блочный</td></tr>
+                            <tr><td>Размер ключа</td><td>5 бит</td><td>Переменный</td><td>~10²³ вариантов</td><td>128–256 бит</td></tr>
+                            <tr><td>Метод взлома</td><td>Перебор за сек.</td><td>Тест Касиски</td><td>Статистика + перебор</td><td>Не взломан</td></tr>
+                            <tr><td>Применение сегодня</td><td>Нет</td><td>Нет</td><td>Нет</td><td>Везде</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: LAB -->
+        <div id="lab" class="tab-content">
+            <!-- Модуль 1: Основное Шифрование / Дешифрование -->
+            <div class="card">
+                <h1>⚡ Интерактивная Лаборатория Шифрования</h1>
+                <p>Выберите шифр и проверьте его работу в реальном времени:</p>
+                
+                <div class="lab-grid">
+                    <div>
+                        <div class="form-group">
+                            <label>Выберите шифр:</label>
+                            <select id="cipher-select" onchange="toggleKeyInput()">
+                                <option value="caesar">Шифр Цезаря</option>
+                                <option value="vigenere">Шифр Виженера</option>
+                                <option value="aes">AES-256 (Современный)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="caesar-key-group">
+                            <label>Сдвиг (Ключ k):</label>
+                            <input type="number" id="caesar-key" value="3" min="1" max="32">
+                        </div>
+
+                        <div class="form-group" id="vigenere-key-group" style="display: none;">
+                            <label>Ключевое слово (буквы):</label>
+                            <input type="text" id="vigenere-key" value="КЛЮЧ" placeholder="Введите слово...">
+                        </div>
+
+                        <div class="form-group" id="aes-key-group" style="display: none;">
+                            <label>Пароль / Секретный ключ AES:</label>
+                            <input type="text" id="aes-key" value="SecretPass2026" placeholder="Введите ключ AES...">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Исходный текст:</label>
+                            <textarea id="input-text" rows="4" placeholder="Введите текст...">ПРИВЕТ МИР</textarea>
+                        </div>
+
+                        <button class="btn-action" onclick="processText('encrypt')">Зашифровать</button>
+                        <button class="btn-action" onclick="processText('decrypt')" style="margin-top: 10px; background: rgba(255,255,255,0.1); border: 1px solid var(--card-border);">Расшифровать</button>
+                    </div>
+
+                    <div>
+                        <div class="form-group">
+                            <label>Результат:</label>
+                            <textarea id="output-text" rows="10" readonly placeholder="Здесь появится результат..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Модуль 2: Авто-взлом Цезаря (Brute-Force) -->
+            <div class="card">
+                <h3>🔓 Криптоанализ: Перебор сдвигов Цезаря (Brute-Force)</h3>
+                <p>Автоматический полный перебор всех 33 возможных сдвигов для введенного текста[cite: 1].</p>
+                <button onclick="crackCaesar()" class="btn-action" style="background: linear-gradient(135deg, #d29922, #f85149); width: auto; padding: 0.6rem 1.2rem;">Взломать шифротекст</button>
+                <div id="brute-force-output" style="margin-top: 15px; max-height: 200px; overflow-y: auto; background: var(--code-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--card-border);">
+                    <em>Нажмите кнопку для запуска взлома...</em>
+                </div>
+            </div>
+
+            <!-- Модуль 3: Хэширование SHA-256 / MD5 -->
+            <div class="card">
+                <h3>⚡ Генератор хэшей (MD5 / SHA-256)</h3>
+                <p>Вычисляет односторонние контрольные суммы[cite: 1].</p>
+                
+                <div class="form-group">
+                    <label>SHA-256:</label>
+                    <input type="text" id="hash-sha256" readonly style="color: var(--primary);">
+                </div>
+                <div class="form-group">
+                    <label>MD5:</label>
+                    <input type="text" id="hash-md5" readonly style="color: var(--neon-purple);">
+                </div>
+                
+                <button onclick="generateHashes()" class="btn-action" style="width: auto; padding: 0.6rem 1.2rem;">Вычислить хэши</button>
+            </div>
+
+            <!-- Модуль 4: Анализатор энтропии пароля -->
+            <div class="card">
+                <h3>🛡️ Анализатор стойкости ключа</h3>
+                <p>Оценивает энтропию и криптостойкость пароля[cite: 1].</p>
+                <div class="form-group">
+                    <label>Введите пароль для анализа:</label>
+                    <input type="text" id="pass-input" oninput="checkPasswordStrength()" placeholder="Например: CryptoPass2026!">
+                </div>
+                <p style="margin-bottom: 0.4rem;">Энтропия ключа: <span id="entropy-val" style="font-weight: bold; color: var(--primary);">0 bit</span></p>
+                <p>Оценка стойкости: <span id="strength-val" style="font-weight: bold;">—</span></p>
+            </div>
+        </div>
+    </container>
+
+    <footer>
+        <p>© 2026 Проект «Эволюция методов шифрования». Выполнен в рамках курса Информатики (10–11 класс).</p>
+    </footer>
+
+    <script>
+        // Tab Switcher
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        function toggleKeyInput() {
+            const cipher = document.getElementById('cipher-select').value;
+            document.getElementById('caesar-key-group').style.display = cipher === 'caesar' ? 'block' : 'none';
+            document.getElementById('vigenere-key-group').style.display = cipher === 'vigenere' ? 'block' : 'none';
+            document.getElementById('aes-key-group').style.display = cipher === 'aes' ? 'block' : 'none';
+        }
+
+        // Crypto Operations
+        const RU = "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
+
+        function processText(mode) {
+            const cipher = document.getElementById('cipher-select').value;
+            const text = document.getElementById('input-text').value;
+            let result = "";
+
+            if (cipher === 'caesar') {
+                const upperText = text.toUpperCase();
+                let shift = parseInt(document.getElementById('caesar-key').value) || 0;
+                if (mode === 'decrypt') shift = (33 - (shift % 33)) % 33;
+
+                for (let char of upperText) {
+                    let idx = RU.indexOf(char);
+                    if (idx !== -1) {
+                        result += RU[(idx + shift) % 33];
+                    } else {
+                        result += char;
+                    }
+                }
+            } else if (cipher === 'vigenere') {
+                const upperText = text.toUpperCase();
+                let key = document.getElementById('vigenere-key').value.toUpperCase().replace(/[^А-Я]/g, '');
+                if (!key) { alert('Введите корректный русскоязычный ключ!'); return; }
+                
+                let keyIdx = 0;
+                for (let char of upperText) {
+                    let idx = RU.indexOf(char);
+                    if (idx !== -1) {
+                        let kChar = key[keyIdx % key.length];
+                        let kShift = RU.indexOf(kChar);
+                        if (mode === 'decrypt') kShift = (33 - kShift) % 33;
+                        
+                        result += RU[(idx + kShift) % 33];
+                        keyIdx++;
+                    } else {
+                        result += char;
+                    }
+                }
+            } else if (cipher === 'aes') {
+                const key = document.getElementById('aes-key').value;
+                if (!key) { alert('Введите ключ шифрования AES!'); return; }
+
+                if (mode === 'encrypt') {
+                    result = CryptoJS.AES.encrypt(text, key).toString();
+                } else {
+                    try {
+                        const bytes = CryptoJS.AES.decrypt(text, key);
+                        result = bytes.toString(CryptoJS.enc.Utf8);
+                        if (!result) result = "Ошибка: Неверный ключ или поврежденные данные!";
+                    } catch (e) {
+                        result = "Ошибка расшифровки AES!";
+                    }
+                }
+            }
+
+            document.getElementById('output-text').value = result;
+        }
+
+        // Brute-Force Caesar
+        function crackCaesar() {
+            const text = document.getElementById('input-text').value;
+            const outputDiv = document.getElementById('brute-force-output');
+            if (!text) { alert('Введите текст в поле ввода!'); return; }
+
+            let html = '<strong>Результаты перебора сдвигов:</strong><ol style="padding-left:20px; margin-top:8px;">';
+            for (let shift = 1; shift < RU.length; shift++) {
+                let decrypted = '';
+                for (let char of text) {
+                    let upper = char.toUpperCase();
+                    let idx = RU.indexOf(upper);
+                    if (idx !== -1) {
+                        let newIdx = (idx - shift + RU.length) % RU.length;
+                        let newChar = RU[newIdx];
+                        decrypted += (char === upper) ? newChar : newChar.toLowerCase();
+                    } else {
+                        decrypted += char;
+                    }
+                }
+                html += `<li style="margin-bottom: 4px;"><strong>Сдвиг +${shift}:</strong> ${decrypted}</li>`;
+            }
+            html += '</ol>';
+            outputDiv.innerHTML = html;
+        }
+
+        // Hashes
+        function generateHashes() {
+            const text = document.getElementById('input-text').value;
+            if (!text) { alert('Введите текст!'); return; }
+            document.getElementById('hash-sha256').value = CryptoJS.SHA256(text).toString();
+            document.getElementById('hash-md5').value = CryptoJS.MD5(text).toString();
+        }
+
+        // Password Strength
+        function checkPasswordStrength() {
+            const pass = document.getElementById('pass-input').value;
+            const entropyEl = document.getElementById('entropy-val');
+            const strengthEl = document.getElementById('strength-val');
+
+            if (!pass) {
+                entropyEl.innerText = '0 bit';
+                strengthEl.innerText = '—';
+                strengthEl.style.color = 'inherit';
+                return;
+            }
+
+            let poolSize = 0;
+            if (/[a-z]/.test(pass)) poolSize += 26;
+            if (/[A-Z]/.test(pass)) poolSize += 26;
+            if (/[0-9]/.test(pass)) poolSize += 10;
+            if (/[^a-zA-Z0-9]/.test(pass)) poolSize += 32;
+            if (/[а-яА-Я]/.test(pass)) poolSize += 66;
+
+            let entropy = Math.round(pass.length * (Math.log2(poolSize || 1)));
+            entropyEl.innerText = `${entropy} бит`;
+
+            if (entropy < 35) {
+                strengthEl.innerText = 'Очень слабый';
+                strengthEl.style.color = '#f85149';
+            } else if (entropy < 60) {
+                strengthEl.innerText = 'Средний';
+                strengthEl.style.color = '#d29922';
+            } else {
+                strengthEl.innerText = 'Высокая стойкость (Надёжен)';
+                strengthEl.style.color = '#3fb950';
+            }
+        }
+
+        /* ИНТЕРАКТИВНЫЙ ФОН: СОЗВЕЗДИЕ С ПРИВЯЗКОЙ К МЫШИ */
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let particles = [];
+        let mouse = { x: null, y: null, radius: 170 };
+
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            initParticles();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        window.addEventListener('mouseleave', () => {
+            mouse.x = null;
+            mouse.y = null;
+        });
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.8;
+                this.vy = (Math.random() - 0.5) * 0.8;
+                this.radius = Math.random() * 2 + 1;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0 || this.x > width) this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#58a6ff';
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            const count = Math.floor((width * height) / 11000);
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animateConstellation() {
+            ctx.clearRect(0, 0, width, height);
+
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+
+                // Соединение между соседними точками
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 110) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(88, 166, 255, ${0.15 * (1 - dist / 110)})`;
+                        ctx.lineWidth = 0.6;
+                        ctx.stroke();
+                    }
+                }
+
+                // Соединение и реакция на курсор мыши
+                if (mouse.x !== null && mouse.y !== null) {
+                    const dx = particles[i].x - mouse.x;
+                    const dy = particles[i].y - mouse.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < mouse.radius) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(mouse.x, mouse.y);
+                        ctx.strokeStyle = `rgba(163, 113, 247, ${0.8 * (1 - dist / mouse.radius)})`;
+                        ctx.lineWidth = 1.2;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            requestAnimationFrame(animateConstellation);
+        }
+
+        resizeCanvas();
+        animateConstellation();
+    </script>
+</body>
+</html>
